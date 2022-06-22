@@ -1,0 +1,10 @@
+* Time-x lib plan
+
+** basic Date creation defaults
+1. function now will produce ZonedDateTime
+2. function now will use the default computer Zone or setup on state of running repl the desired Zone
+
+
+** basic Date comparisson and diff in Units
+
+** basic Date with alration in Time Units
