@@ -5,4 +5,6 @@
 
 (deftest a-test
   (testing "FIXME, I don't fail."
-    (is (true? (= 4 (count (str (= 1 1))))))))
+    (is (true? (= 2 (count (str (= 1 1))))))))
+
+(test-var a-test)
