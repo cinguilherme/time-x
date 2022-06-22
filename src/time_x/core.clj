@@ -5,7 +5,6 @@
   ([] (ZonedDateTime/now))
   ([zone-id] (ZonedDateTime/now zone-id)))
 
-
 (defn after? [d1 d2])
 (defn before? [d1 d2])
 (defn very-close? [d1 d2])
@@ -22,4 +21,3 @@
 (comment (now)
          (println (now (ZoneId/of "America/Recife")))
          (now (ZoneId/of "America/Sao_Paulo")))
-

@@ -1,10 +1,13 @@
 (ns time-x.core-test
   (:require [clojure.test :refer :all]
-            [time-x.core :refer :all]))
+            [time-x.core :refer :all]
+            [time-x.util :refer :all]))
 
+(deftest now-test
+  (is (not-nil?)))
 
-(deftest a-test
-  (testing "FIXME, I don't fail."
-    (is (true? (= 2 (count (str (= 1 1))))))))
+(deftest after?-test
+  (is (= 1 1)))
 
-(test-var a-test)
+(deftest very-close?-test
+  (is (= 1 1)))
