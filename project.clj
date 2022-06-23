@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.3"]
                  [prismatic/schema "1.3.0"]
                  [prismatic/schema-generators "0.1.5"]
+                 [com.stuartsierra/component "1.1.0"]
                  [nubank/state-flow "5.14.1"]
                  [nubank/matcher-combinators "3.5.0"]]
   :plugins [[lein-cloverage "1.0.13"]

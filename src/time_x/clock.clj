@@ -1,6 +1,6 @@
-(ns time-x.clock
-  (:require [time-x.util :refer :all])
-  (:import [java.time ZonedDateTime ZoneId Clock Instant Duration]))
+(ns time-x.clock)
+(:require [time-x.util :refer :all])
+(:import [java.time ZonedDateTime ZoneId Clock Instant Duration])
 
 (def rec (ZoneId/of "America/Recife"))
 
@@ -36,6 +36,7 @@
 (println (.instant @running-clock))
 
 (defrecord Clocker [])
+
 
 (defn new-clock-instance []
   (atom {}))
