@@ -1,6 +1,7 @@
-(ns time-x.clock)
-(:require [time-x.util :refer :all])
-(:import [java.time ZonedDateTime ZoneId Clock Instant Duration])
+(ns time-x.clock
+  (:require [time-x.util :refer :all]
+            [schema.core :as s])
+  (:import [java.time ZonedDateTime ZoneId Clock Instant Duration]))
 
 (def rec (ZoneId/of "America/Recife"))
 
@@ -19,24 +20,79 @@
     (swap! running-clock (fn [_] (Clock/offset @running-clock (Duration/ofSeconds 1))))
     (recur (inc t))))
 
-(defn create-ticking-clock-at [inst]
-  (let [fix (Clock/fixed (.toInstant fix-inst) rec)
-        running-clock (atom (Clock/offset (fixed-time) (Duration/ofSeconds 1)))]
-    (do (future
-          (loop [t 0]
-            (Thread/sleep 1000)
-            (swap! running-clock (fn [_] (Clock/offset @running-clock (Duration/ofSeconds 1))))
-            (recur (inc t))))
-        running-clock)))
+(defn duration-to-millis
+  [d]
+  (.toMillis d))
+
+(duration-to-millis (Duration/ofSeconds 1))
+
+(duration-to-millis (Duration/ofMinutes 1))
+
+(s/defschema ClockConf
+  {:init-inst Instant
+   :tick-time-ms s/Num
+   :offset Duration})
+
+(s/explain ClockConf)
+
+(def slow-clock-conf
+  {:init-inst fix-inst
+   :tick-time-ms 1000
+   :offset (Duration/ofMillis 100)})
+
+(def fast-clock-conf
+  {:init-inst fix-inst
+   :tick-time-ms 10
+   :offset (Duration/ofSeconds 30)})
+
+(def normal-clock-conf
+  {:init-inst fix-inst
+   :tick-time-ms 1000
+   :offset (Duration/ofMillis 1000)})
+
+(defn create-ticking-clock-with-conf
+  [{:keys [init-inst tick-time-ms offset]}]
+  (let [fix (Clock/fixed init-inst rec)
+         running-clock (atom (Clock/offset fix offset))]
+     (do (future
+           (loop [t 0]
+             (Thread/sleep tick-time-ms)
+             (swap! running-clock (fn [_] (Clock/offset @running-clock offset)))
+             (recur (inc t))))
+         running-clock)))
+
+(defn create-ticking-clock-at
+  ([]
+   (create-ticking-clock-at fix-inst))
+  ([inst]
+   (create-ticking-clock-at inst (Duration/ofSeconds 1) 1000))
+  ([inst tick-time tick-interval]
+   (let [fix (Clock/fixed (.toInstant inst) rec)
+         running-clock (atom (Clock/offset (fixed-time) tick-time))]
+     (do (future
+           (loop [t 0]
+             (Thread/sleep tick-interval)
+             (swap! running-clock (fn [_] (Clock/offset @running-clock tick-time)))
+             (recur (inc t))))
+         running-clock))))
 
 (def another-running-clock (create-ticking-clock-at fix-inst))
+
+(def a-fast-clock (create-ticking-clock-at fix-inst (Duration/ofSeconds 30) 50))
+(def a-slow-clock (create-ticking-clock-at fix-inst (Duration/ofMillis 200) 1000))
+
+
+(def another-fast-clock (create-ticking-clock-with-conf fast-clock-conf))
+
+(println (.instant @a-slow-clock))
+
+(println (.instant @a-fast-clock))
 
 (println (.instant @another-running-clock))
 
 (println (.instant @running-clock))
 
 (defrecord Clocker [])
-
 
 (defn new-clock-instance []
   (atom {}))
