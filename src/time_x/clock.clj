@@ -5,10 +5,12 @@
 
 (def rec (ZoneId/of "America/Recife"))
 
-(def fix-inst (ZonedDateTime/of 2020 10 10 10 10 10 10 rec))
+(def fix-time (ZonedDateTime/of 2020 10 10 10 10 10 10 rec))
+
+(def fix-inst (.toInstant fix-time))
 
 (defn fixed-time []
-  (Clock/fixed (.toInstant fix-inst) rec))
+  (Clock/fixed fix-inst rec))
 
 (fixed-time)
 
@@ -53,13 +55,13 @@
 (defn create-ticking-clock-with-conf
   [{:keys [init-inst tick-time-ms offset]}]
   (let [fix (Clock/fixed init-inst rec)
-         running-clock (atom (Clock/offset fix offset))]
-     (do (future
-           (loop [t 0]
-             (Thread/sleep tick-time-ms)
-             (swap! running-clock (fn [_] (Clock/offset @running-clock offset)))
-             (recur (inc t))))
-         running-clock)))
+        running-clock (atom (Clock/offset fix offset))]
+    (do (future
+          (loop [t 0]
+            (Thread/sleep tick-time-ms)
+            (swap! running-clock (fn [_] (Clock/offset @running-clock offset)))
+            (recur (inc t))))
+        running-clock)))
 
 (defn create-ticking-clock-at
   ([]
@@ -67,7 +69,7 @@
   ([inst]
    (create-ticking-clock-at inst (Duration/ofSeconds 1) 1000))
   ([inst tick-time tick-interval]
-   (let [fix (Clock/fixed (.toInstant inst) rec)
+   (let [fix (Clock/fixed inst rec)
          running-clock (atom (Clock/offset (fixed-time) tick-time))]
      (do (future
            (loop [t 0]
@@ -75,22 +77,6 @@
              (swap! running-clock (fn [_] (Clock/offset @running-clock tick-time)))
              (recur (inc t))))
          running-clock))))
-
-(def another-running-clock (create-ticking-clock-at fix-inst))
-
-(def a-fast-clock (create-ticking-clock-at fix-inst (Duration/ofSeconds 30) 50))
-(def a-slow-clock (create-ticking-clock-at fix-inst (Duration/ofMillis 200) 1000))
-
-
-(def another-fast-clock (create-ticking-clock-with-conf fast-clock-conf))
-
-(println (.instant @a-slow-clock))
-
-(println (.instant @a-fast-clock))
-
-(println (.instant @another-running-clock))
-
-(println (.instant @running-clock))
 
 (defrecord Clocker [])
 
@@ -102,3 +88,16 @@
 
 (new-clock-instance)
 (new-clock)
+
+(comment
+
+  (def another-running-clock (create-ticking-clock-at fix-inst))
+
+  (def a-fast-clock (create-ticking-clock-at fix-inst (Duration/ofSeconds 30) 50))
+  (def a-slow-clock (create-ticking-clock-at fix-inst (Duration/ofMillis 200) 1000))
+  (def another-fast-clock (create-ticking-clock-with-conf fast-clock-conf))
+
+  (println (.instant @a-slow-clock))
+  (println (.instant @a-fast-clock))
+  (println (.instant @another-running-clock))
+  (println (.instant @running-clock)))
