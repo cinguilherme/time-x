@@ -1,6 +1,7 @@
 (ns time-x.clock
   (:require [time-x.util :refer :all]
-            [schema.core :as s])
+            [schema.core :as s]
+            [com.stuartsierra.component :as component])
   (:import [java.time ZonedDateTime ZoneId Clock Instant Duration]))
 
 (def rec (ZoneId/of "America/Recife"))
@@ -35,7 +36,13 @@
    :tick-time-ms s/Num
    :offset Duration})
 
+(s/defschema ClockControl
+  {:pause (s/atom s/Bool)
+   :stop (s/atom s/Bool)})
+
 (s/explain ClockConf)
+(s/explain ClockControl)
+(s/check ClockControl {:pause (atom false) :stop (atom false)})
 
 (def slow-clock-conf
   {:init-inst fix-inst
@@ -70,24 +77,33 @@
    (create-ticking-clock-at inst (Duration/ofSeconds 1) 1000))
   ([inst tick-time tick-interval]
    (let [fix (Clock/fixed inst rec)
-         running-clock (atom (Clock/offset (fixed-time) tick-time))]
+         running-clock (atom (Clock/offset (fixed-time) tick-time))
+         pause (atom false)
+         stop-button (atom false)]
      (do (future
            (loop [t 0]
-             (Thread/sleep tick-interval)
-             (swap! running-clock (fn [_] (Clock/offset @running-clock tick-time)))
-             (recur (inc t))))
+             (if @stop-button
+               nil                ;; effective shutdown the clock ticker
+               (do
+                 (when (false? @pause)
+                 (Thread/sleep tick-interval
+                 (swap! running-clock (fn [_] (Clock/offset @running-clock tick-time)))))
+                 (recur (inc t))))))
          running-clock))))
 
-(defrecord Clocker [])
+(s/defrecord Clocker
+    [maybe-conf :- ClockConf
+     clock-control :- ClockControl]
 
-(defn new-clock-instance []
-  (atom {}))
+  component/Lifecycle
 
-(defn new-clock []
-  (ZonedDateTime/now))
+  (start [this]
+    (if (nil? maybe-conf)
+      this
+      (assoc this :clock (create-ticking-clock-with-conf maybe-conf))))
+  (stop [this]
+    this))
 
-(new-clock-instance)
-(new-clock)
 
 (comment
 
