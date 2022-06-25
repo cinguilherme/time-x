@@ -150,10 +150,13 @@
 
   (def clock-comp (new-clock fast-clock-conf {:pause (atom false) :stop (atom false)}))
   (def started (component/start clock-comp))
-  (pause started)
-  (stop started)
+
   (start started)
+  (stop started)
+
   (play started)
+  (pause started)
+
   (pprint started)
   (pprint (time-now started))
 
