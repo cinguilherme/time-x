@@ -97,8 +97,8 @@
          running-clock))))
 
 (s/defrecord Clocker
-  [maybe-conf :- ClockConf
-   clock-control :- ClockControl]
+             [maybe-conf :- ClockConf
+              clock-control :- ClockControl]
 
   component/Lifecycle
 
@@ -137,7 +137,7 @@
 
   (def a-fast-clock (create-ticking-clock-at fix-inst (Duration/ofSeconds 30) 50))
   (def a-slow-clock (create-ticking-clock-at fix-inst (Duration/ofMillis 200) 1000))
-  (def another-fast-clock (create-ticking-clock-with-conf fast-clock-conf))
+  ;(def another-fast-clock (create-ticking-clock-with-conf fast-clock-conf))
 
   (println (.instant @a-slow-clock))
   (println (.instant @a-fast-clock))
