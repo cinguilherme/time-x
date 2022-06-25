@@ -6,31 +6,15 @@
   (:import [java.time ZonedDateTime ZoneId Clock Instant Duration]))
 
 (def rec (ZoneId/of "America/Recife"))
-
 (def fix-time (ZonedDateTime/of 2020 10 10 10 10 10 10 rec))
-
 (def fix-inst (.toInstant fix-time))
 
 (defn fixed-time []
   (Clock/fixed fix-inst rec))
 
-(fixed-time)
-
-(def running-clock (atom (Clock/offset (fixed-time) (Duration/ofSeconds 1))))
-
-(future
-  (loop [t 0]
-    (Thread/sleep 1000)
-    (swap! running-clock (fn [_] (Clock/offset @running-clock (Duration/ofSeconds 1))))
-    (recur (inc t))))
-
 (defn duration-to-millis
   [d]
   (.toMillis d))
-
-(duration-to-millis (Duration/ofSeconds 1))
-
-(duration-to-millis (Duration/ofMinutes 1))
 
 (s/defschema ClockConf
   {:init-inst    Instant
@@ -65,15 +49,15 @@
    {:keys [pause stop]}]
   (let [fix (Clock/fixed init-inst rec)
         running-clock (atom (Clock/offset fix offset))]
-    (do (future
-          (loop [t 0]
-            (if (true? @stop)
-              nil
-              (do (Thread/sleep tick-time-ms)
-                  (when (false? @pause)
-                    (swap! running-clock (fn [_] (Clock/offset @running-clock offset))))
-                  (recur (inc t))))))
-        running-clock)))
+    (future
+      (loop [t 0]
+        (if (true? @stop)
+          nil
+          (do (Thread/sleep tick-time-ms)
+              (when (false? @pause)
+                (swap! running-clock (fn [_] (Clock/offset @running-clock offset))))
+              (recur (inc t))))))
+    running-clock))
 
 (defn create-ticking-clock-at
   ([]
@@ -109,15 +93,44 @@
   (stop [this]
     this))
 
-(defn time-now [clock]
+(defn time-now
+  [clock]
   (let [clock @(:clock clock)]
     (.instant clock)))
 
-(defn pause [clock]
+(defn pause
+  "pauses the clock, making it not offset as long as is paused"
+  [clock]
   (let [control (:clock-control clock)]
     (swap! (:pause control) (fn [_] true))))
 
-(defn play [clock]
+(defn stop
+  "breaks out of loop of tick, only to use if clock is no longer needed"
+  [clock]
+  (let [control (:clock-control clock)]
+    (swap! (:stop control) (fn [_] true))))
+
+(defn start
+  [{:keys [clock maybe-conf clock-control]}]
+  (let [{:keys [stop pause]} clock-control
+        {:keys [init-inst tick-time-ms offset]} maybe-conf
+        fix (Clock/fixed init-inst rec)]
+    (when clock
+      (do
+        (swap! clock (fn [_] (atom (Clock/offset fix offset))))
+        (future
+          (loop [t 0]
+            (if (true? @stop)
+              nil
+              (do
+                (Thread/sleep tick-time-ms)
+                (when (false? @pause)
+                  (swap! clock (fn [_] (Clock/offset @clock offset))))
+                (recur (inc t))))))))))
+
+(defn play
+  "unpauses the clock"
+  [clock]
   (let [control (:clock-control clock)]
     (swap! (:pause control) (fn [_] false))))
 
@@ -129,8 +142,10 @@
   (def clock-comp (new-clock fast-clock-conf {:pause (atom false) :stop (atom false)}))
   (def started (component/start clock-comp))
   (pause started)
+  (stop started)
+  (start started)
   (play started)
-  (println started)
+  (pprint started)
   (pprint (time-now started))
 
   (def another-running-clock (create-ticking-clock-at fix-inst))
