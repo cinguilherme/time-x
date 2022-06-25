@@ -1,6 +1,7 @@
 (ns time-x.clock
   (:require [time-x.util :refer :all]
             [schema.core :as s]
+            [clojure.pprint :refer :all]
             [com.stuartsierra.component :as component])
   (:import [java.time ZonedDateTime ZoneId Clock Instant Duration]))
 
@@ -32,42 +33,46 @@
 (duration-to-millis (Duration/ofMinutes 1))
 
 (s/defschema ClockConf
-  {:init-inst Instant
+  {:init-inst    Instant
    :tick-time-ms s/Num
-   :offset Duration})
+   :offset       Duration})
 
 (s/defschema ClockControl
   {:pause (s/atom s/Bool)
-   :stop (s/atom s/Bool)})
+   :stop  (s/atom s/Bool)})
 
 (s/explain ClockConf)
 (s/explain ClockControl)
 (s/check ClockControl {:pause (atom false) :stop (atom false)})
 
 (def slow-clock-conf
-  {:init-inst fix-inst
+  {:init-inst    fix-inst
    :tick-time-ms 1000
-   :offset (Duration/ofMillis 100)})
+   :offset       (Duration/ofMillis 100)})
 
 (def fast-clock-conf
-  {:init-inst fix-inst
+  {:init-inst    fix-inst
    :tick-time-ms 10
-   :offset (Duration/ofSeconds 30)})
+   :offset       (Duration/ofSeconds 30)})
 
 (def normal-clock-conf
-  {:init-inst fix-inst
+  {:init-inst    fix-inst
    :tick-time-ms 1000
-   :offset (Duration/ofMillis 1000)})
+   :offset       (Duration/ofMillis 1000)})
 
 (defn create-ticking-clock-with-conf
-  [{:keys [init-inst tick-time-ms offset]}]
+  [{:keys [init-inst tick-time-ms offset]}
+   {:keys [pause stop]}]
   (let [fix (Clock/fixed init-inst rec)
         running-clock (atom (Clock/offset fix offset))]
     (do (future
           (loop [t 0]
-            (Thread/sleep tick-time-ms)
-            (swap! running-clock (fn [_] (Clock/offset @running-clock offset)))
-            (recur (inc t))))
+            (if (true? @stop)
+              nil
+              (do (Thread/sleep tick-time-ms)
+                  (when (false? @pause)
+                    (swap! running-clock (fn [_] (Clock/offset @running-clock offset))))
+                  (recur (inc t))))))
         running-clock)))
 
 (defn create-ticking-clock-at
@@ -83,29 +88,50 @@
      (do (future
            (loop [t 0]
              (if @stop-button
-               nil                ;; effective shutdown the clock ticker
+               nil                                          ;; effective shutdown the clock ticker
                (do
-                 (when (false? @pause)
-                 (Thread/sleep tick-interval
-                 (swap! running-clock (fn [_] (Clock/offset @running-clock tick-time)))))
+                 (when (false? @pause))
+                 (Thread/sleep tick-interval)
+                 (swap! running-clock (fn [_] (Clock/offset @running-clock tick-time)))
                  (recur (inc t))))))
          running-clock))))
 
 (s/defrecord Clocker
-    [maybe-conf :- ClockConf
-     clock-control :- ClockControl]
+  [maybe-conf :- ClockConf
+   clock-control :- ClockControl]
 
   component/Lifecycle
 
   (start [this]
-    (if (nil? maybe-conf)
+    (if (or (nil? maybe-conf) (nil? clock-control))
       this
-      (assoc this :clock (create-ticking-clock-with-conf maybe-conf))))
+      (assoc this :clock (create-ticking-clock-with-conf maybe-conf clock-control))))
   (stop [this]
     this))
 
+(defn time-now [clock]
+  (let [clock @(:clock clock)]
+    (.instant clock)))
+
+(defn pause [clock]
+  (let [control (:clock-control clock)]
+    (swap! (:pause control) (fn [_] true))))
+
+(defn play [clock]
+  (let [control (:clock-control clock)]
+    (swap! (:pause control) (fn [_] false))))
+
+(defn new-clock [conf state]
+  (->Clocker conf state))
 
 (comment
+
+  (def clock-comp (new-clock fast-clock-conf {:pause (atom false) :stop (atom false)}))
+  (def started (component/start clock-comp))
+  (pause started)
+  (play started)
+  (println started)
+  (pprint (time-now started))
 
   (def another-running-clock (create-ticking-clock-at fix-inst))
 
