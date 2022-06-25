@@ -101,6 +101,7 @@
     this))
 
 (defn time-now
+  "returns an instant for the current time in a clock"
   [clock]
   (let [clock @(:clock clock)]
     (.instant clock)))
@@ -117,7 +118,18 @@
   (let [control (:clock-control clock)]
     (swap! (:stop control) (fn [_] true))))
 
+(defn relative-interval-ms
+  "given a clock, returns the equivalent ms number to a given ms time in the real world
+  eg: 1000ms in real life is 1000ms for a normal clock
+      1000ms in real life can be 10ms or 10000ms on a custom speed clock"
+  [clock ms]
+  (let [{:keys [maybe-conf]} clock
+        {:keys [tick-time-ms]} maybe-conf]
+    (* ms (/ tick-time-ms 1000))))
+
 (defn start
+  "given a clock and its configuration map and controls the
+  clock will be restarted at the fixed date time"
   [{:keys [clock maybe-conf clock-control]}]
   (let [{:keys [stop pause]} clock-control
         {:keys [init-inst tick-time-ms offset]} maybe-conf
@@ -148,6 +160,9 @@
 
 (comment
 
+  (def normal-clock-comp (new-clock normal-clock-conf {:pause (atom false) :stop (atom false)}))
+  (def started-normal normal-clock-comp)
+
   (def clock-comp (new-clock fast-clock-conf {:pause (atom false) :stop (atom false)}))
   (def started (component/start clock-comp))
 
@@ -156,6 +171,9 @@
 
   (play started)
   (pause started)
+
+  (pprint (relative-interval-ms started 1000))
+  (pprint (relative-interval-ms started-normal 1000))
 
   (pprint started)
   (pprint (time-now started))
