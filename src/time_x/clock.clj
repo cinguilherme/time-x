@@ -1,9 +1,16 @@
 (ns time-x.clock
-  (:require [time-x.util :refer :all]
-            [schema.core :as s]
-            [clojure.pprint :refer :all]
-            [com.stuartsierra.component :as component])
-  (:import [java.time ZonedDateTime ZoneId Clock Instant Duration]))
+  (:require
+   [clojure.pprint :refer :all]
+   [com.stuartsierra.component :as component]
+   [schema.core :as s]
+   [time-x.util :refer :all])
+  (:import
+   [java.time
+    Clock
+    Duration
+    Instant
+    ZoneId
+    ZonedDateTime]))
 
 (def rec (ZoneId/of "America/Recife"))
 (def fix-time (ZonedDateTime/of 2020 10 10 10 10 10 10 rec))
@@ -66,7 +73,7 @@
    (create-ticking-clock-at inst (Duration/ofSeconds 1) 1000))
   ([inst tick-time tick-interval]
    (let [fix (Clock/fixed inst rec)
-         running-clock (atom (Clock/offset (fixed-time) tick-time))
+         running-clock (atom (Clock/offset fix tick-time))
          pause (atom false)
          stop-button (atom false)]
      (do (future
@@ -74,15 +81,15 @@
              (if @stop-button
                nil                                          ;; effective shutdown the clock ticker
                (do
-                 (when (false? @pause))
-                 (Thread/sleep tick-interval)
-                 (swap! running-clock (fn [_] (Clock/offset @running-clock tick-time)))
+                 (when (false? @pause)
+                   (Thread/sleep tick-interval)
+                   (swap! running-clock (fn [_] (Clock/offset @running-clock tick-time))))
                  (recur (inc t))))))
          running-clock))))
 
 (s/defrecord Clocker
-  [maybe-conf :- ClockConf
-   clock-control :- ClockControl]
+             [maybe-conf :- ClockConf
+              clock-control :- ClockControl]
 
   component/Lifecycle
 
@@ -154,9 +161,7 @@
 
   (def a-fast-clock (create-ticking-clock-at fix-inst (Duration/ofSeconds 30) 50))
   (def a-slow-clock (create-ticking-clock-at fix-inst (Duration/ofMillis 200) 1000))
-  ;(def another-fast-clock (create-ticking-clock-with-conf fast-clock-conf))
 
   (println (.instant @a-slow-clock))
   (println (.instant @a-fast-clock))
-  (println (.instant @another-running-clock))
-  (println (.instant @running-clock)))
+  (println (.instant @another-running-clock)))

@@ -1,6 +1,7 @@
 (ns time-x.util-test
-  (:require [time-x.util :as util :refer :all]
-            [clojure.test :refer :all]))
+  (:require
+   [clojure.test :refer :all]
+   [time-x.util :as util :refer :all]))
 
 (deftest not-nil?-test
   (testing "only nil is nil map"

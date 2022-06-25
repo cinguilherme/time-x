@@ -12,7 +12,9 @@
   :plugins [[lein-cloverage "1.0.13"]
             [lein-shell "0.5.0"]
             [lein-ancient "0.6.15"]
-            [lein-changelog "0.3.2"]]
+            [lein-changelog "0.3.2"]
+            [com.github.clojure-lsp/lein-clojure-lsp "1.3.9"]]
+
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.10.3"]
                                   [nubank/state-flow "5.14.1"]
                                   [nubank/matcher-combinators "3.5.0"]]}}

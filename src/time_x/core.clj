@@ -1,5 +1,6 @@
 (ns time-x.core
-  (:import [java.time ZonedDateTime ZoneId]))
+  (:import
+   [java.time ZoneId ZonedDateTime]))
 
 (defn now
   ([] (ZonedDateTime/now))

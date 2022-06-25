@@ -1,7 +1,8 @@
 (ns time-x.core-test
-  (:require [clojure.test :refer :all]
-            [time-x.core :refer :all]
-            [time-x.util :refer :all]))
+  (:require
+   [clojure.test :refer :all]
+   [time-x.core :refer :all]
+   [time-x.util :refer :all]))
 
 (deftest now-test
   (is (not-nil?)))
