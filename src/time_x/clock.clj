@@ -81,8 +81,8 @@
          running-clock))))
 
 (s/defrecord Clocker
-             [maybe-conf :- ClockConf
-              clock-control :- ClockControl]
+  [maybe-conf :- ClockConf
+   clock-control :- ClockControl]
 
   component/Lifecycle
 
@@ -117,7 +117,9 @@
         fix (Clock/fixed init-inst rec)]
     (when clock
       (do
-        (swap! clock (fn [_] (atom (Clock/offset fix offset))))
+        (swap! (:pause clock-control) (fn [_] false))
+        (swap! (:stop clock-control) (fn [_] false))
+        (swap! clock (fn [_] (Clock/offset fix offset)))
         (future
           (loop [t 0]
             (if (true? @stop)
