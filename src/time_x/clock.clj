@@ -38,7 +38,7 @@
 
 (def slow-clock-conf
   {:init-inst    fix-inst
-   :tick-time-ms 1000
+   :tick-time-ms 10000
    :offset       (Duration/ofMillis 100)})
 
 (def fast-clock-conf
@@ -163,20 +163,25 @@
   (def normal-clock-comp (new-clock normal-clock-conf {:pause (atom false) :stop (atom false)}))
   (def started-normal normal-clock-comp)
 
+  (def slow-clock-comp (new-clock slow-clock-conf {:pause (atom false) :stop (atom false)}))
+  (def started-slow (component/start slow-clock-comp))
+
   (def clock-comp (new-clock fast-clock-conf {:pause (atom false) :stop (atom false)}))
-  (def started (component/start clock-comp))
+  (def started-fast (component/start clock-comp))
 
-  (start started)
-  (stop started)
+  (start started-fast)
+  (stop started-fast)
 
-  (play started)
-  (pause started)
+  (play started-fast)
+  (pause started-fast)
 
-  (pprint (relative-interval-ms started 1000))
+  (pprint (relative-interval-ms started-fast 1000))
   (pprint (relative-interval-ms started-normal 1000))
+  (pprint (relative-interval-ms started-slow 1000))
 
-  (pprint started)
-  (pprint (time-now started))
+  (pprint started-fast)
+  (pprint (time-now started-fast))
+  (pprint (time-now started-slow))
 
   (def another-running-clock (create-ticking-clock-at fix-inst))
 
