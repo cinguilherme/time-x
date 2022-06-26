@@ -106,6 +106,15 @@
   (let [clock @(:clock clock)]
     (.instant clock)))
 
+(defn date-time-now
+  [clock]
+  (let [clock @(-> clock :clock)]
+    (ZonedDateTime/ofInstant
+     (.instant clock)
+     (.getZone clock))))
+
+#_(println (ZonedDateTime/ofInstant (.instant (Clock/systemDefaultZone)) (ZoneId/of "America/Recife")))
+
 (defn pause
   "pauses the clock, making it not offset as long as is paused"
   [clock]
@@ -160,8 +169,13 @@
 
 (comment
 
+  #_(println (ZonedDateTime/ofInstant (.instant (Clock/systemDefaultZone)) (ZoneId/of "America/Recife")))
+
   (def normal-clock-comp (new-clock normal-clock-conf {:pause (atom false) :stop (atom false)}))
-  (def started-normal normal-clock-comp)
+  (def started-normal (component/start normal-clock-comp))
+  (play started-normal)
+  (pprint started-normal)
+  (date-time-now started-normal)
 
   (def slow-clock-comp (new-clock slow-clock-conf {:pause (atom false) :stop (atom false)}))
   (def started-slow (component/start slow-clock-comp))
